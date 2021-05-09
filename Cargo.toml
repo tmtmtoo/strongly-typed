@@ -1,5 +1,5 @@
 [package]
-name = "strongly-typed-example"
+name = "strongly-typed"
 version = "0.1.0"
 authors = ["tmtmtoo <tmtmt2209@gmail.com>"]
 edition = "2018"

@@ -1,1 +1,1 @@
-# strongly-typed-example
+# strongly-typed
