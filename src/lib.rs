@@ -136,30 +136,45 @@ impl<T, C: Contract<Value = T>> TypedValue<T, C> {
     }
 }
 
-macro_rules! export_types {
-    ( $($x:ty => $y:ident),* ) => {
-        $( pub type $y<C> = TypedValue<$x, C>; )*
-    };
+pub trait TypedValueExt: Sized {
+    fn typed<C: Contract<Value = Self>>(self) -> Result<TypedValue<Self, C>, C::Error>;
 }
 
-export_types!(
-    u8      => TypedU8,
-    u16     => TypedU16,
-    u32     => TypedU32,
-    u64     => TypedU64,
-    u128    => TypedU128,
-    usize   => TypedUSize,
-    i8      => TypedI8,
-    i16     => TypedI16,
-    i32     => TypedI32,
-    i64     => TypedI64,
-    i128    => TypedI128,
-    usize   => TypedISize,
-    f32     => TypedF32,
-    f64     => TypedF64,
-    char    => TypedChar,
-    String  => TypedString
-);
+impl<T> TypedValueExt for T {
+    #[inline]
+    fn typed<C: Contract<Value = Self>>(self) -> Result<TypedValue<Self, C>, C::Error> {
+        TypedValue::<Self, C>::new(self)
+    }
+}
+
+pub mod primitive {
+    use super::*;
+
+    macro_rules! export_types {
+        ( $($x:ty => $y:ident),* ) => {
+            $( pub type $y<C> = TypedValue<$x, C>; )*
+        };
+    }
+
+    export_types!(
+        u8      => TypedU8,
+        u16     => TypedU16,
+        u32     => TypedU32,
+        u64     => TypedU64,
+        u128    => TypedU128,
+        usize   => TypedUSize,
+        i8      => TypedI8,
+        i16     => TypedI16,
+        i32     => TypedI32,
+        i64     => TypedI64,
+        i128    => TypedI128,
+        usize   => TypedISize,
+        f32     => TypedF32,
+        f64     => TypedF64,
+        char    => TypedChar,
+        String  => TypedString
+    );
+}
 
 #[cfg(test)]
 mod property_based_tests {

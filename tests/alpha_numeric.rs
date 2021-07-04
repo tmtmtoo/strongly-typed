@@ -1,9 +1,10 @@
 extern crate strongly_typed;
 
-use strongly_typed::*;
+use strongly_typed::{primitive::TypedString, *};
 
 const ALPHA_NUMERIC_REGEX: once_cell::sync::Lazy<regex::Regex> =
     once_cell::sync::Lazy::new(|| regex::Regex::new("^[A-Za-z0-9]+$").expect("invalid regex"));
+
 enum AlphaNumericContract {}
 
 impl Contract for AlphaNumericContract {

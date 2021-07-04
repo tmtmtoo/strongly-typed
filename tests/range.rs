@@ -1,6 +1,7 @@
 extern crate strongly_typed;
 
-use strongly_typed::*;
+use strongly_typed::{primitive::TypedU8, *};
+
 enum RangeContract<const MIN: u8, const MAX: u8> {}
 
 impl<const MIN: u8, const MAX: u8> Contract for RangeContract<MIN, MAX> {
