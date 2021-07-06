@@ -1,29 +1,29 @@
-pub struct TypedValue<T, C> {
+pub struct TypedValue<T, V> {
     inner: T,
-    _phantom: std::marker::PhantomData<C>,
+    _phantom: std::marker::PhantomData<V>,
 }
 
-impl<T: PartialEq, C> PartialEq for TypedValue<T, C> {
+impl<T: PartialEq, V> PartialEq for TypedValue<T, V> {
     fn eq(&self, other: &Self) -> bool {
         self.inner.eq(&other.inner)
     }
 }
 
-impl<T: Eq, C> Eq for TypedValue<T, C> {}
+impl<T: Eq, V> Eq for TypedValue<T, V> {}
 
-impl<T: PartialOrd, C> PartialOrd for TypedValue<T, C> {
+impl<T: PartialOrd, V> PartialOrd for TypedValue<T, V> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.inner.partial_cmp(&other.inner)
     }
 }
 
-impl<T: Ord, C> Ord for TypedValue<T, C> {
+impl<T: Ord, V> Ord for TypedValue<T, V> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.inner.cmp(&other.inner)
     }
 }
 
-impl<T: Clone, C> Clone for TypedValue<T, C> {
+impl<T: Clone, V> Clone for TypedValue<T, V> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -32,15 +32,15 @@ impl<T: Clone, C> Clone for TypedValue<T, C> {
     }
 }
 
-impl<T: Copy, C> Copy for TypedValue<T, C> {}
+impl<T: Copy, V> Copy for TypedValue<T, V> {}
 
-impl<T: std::hash::Hash, C> std::hash::Hash for TypedValue<T, C> {
+impl<T: std::hash::Hash, V> std::hash::Hash for TypedValue<T, V> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.inner.hash(state)
     }
 }
 
-impl<T: std::fmt::Debug, C> std::fmt::Debug for TypedValue<T, C> {
+impl<T: std::fmt::Debug, V> std::fmt::Debug for TypedValue<T, V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TypedValue")
             .field("inner", &self.inner)
@@ -48,13 +48,13 @@ impl<T: std::fmt::Debug, C> std::fmt::Debug for TypedValue<T, C> {
     }
 }
 
-impl<T: std::fmt::Display, C> std::fmt::Display for TypedValue<T, C> {
+impl<T: std::fmt::Display, V> std::fmt::Display for TypedValue<T, V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.inner)
     }
 }
 
-impl<T, C> std::ops::Deref for TypedValue<T, C> {
+impl<T, V> std::ops::Deref for TypedValue<T, V> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -62,18 +62,18 @@ impl<T, C> std::ops::Deref for TypedValue<T, C> {
     }
 }
 
-pub trait Contract {
+pub trait Validate {
     type Value;
     type Error;
 
-    fn invariant(value: &Self::Value) -> Result<(), Self::Error>;
+    fn validate(value: &Self::Value) -> Result<(), Self::Error>;
 }
 
 pub trait Encode {
     type Value;
     type Target;
 
-    fn into(value: &Self::Value) -> Self::Target;
+    fn encode(value: &Self::Value) -> Self::Target;
 }
 
 pub trait Decode {
@@ -81,42 +81,42 @@ pub trait Decode {
     type Target;
     type Error;
 
-    fn from(value: &Self::Target) -> Result<Self::Value, Self::Error>;
+    fn decode(value: &Self::Target) -> Result<Self::Value, Self::Error>;
 }
 
 #[derive(Debug)]
-pub enum DecodingError<D, C> {
+pub enum DecodingError<D, V> {
     Decode(D),
-    Contract(C),
+    Validate(V),
 }
 
-impl<D: std::fmt::Display, C: std::fmt::Display> std::fmt::Display for DecodingError<D, C> {
+impl<D: std::fmt::Display, V: std::fmt::Display> std::fmt::Display for DecodingError<D, V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let (kind, error) = match self {
             DecodingError::Decode(e) => ("Decode", e as &dyn std::fmt::Display),
-            DecodingError::Contract(e) => ("Contract", e as &dyn std::fmt::Display),
+            DecodingError::Validate(e) => ("Validate", e as &dyn std::fmt::Display),
         };
 
         write!(f, "Decoding failed on {} phase because: {}", kind, error)
     }
 }
 
-impl<D: std::error::Error + 'static, C: std::error::Error + 'static> std::error::Error
-    for DecodingError<D, C>
+impl<D: std::error::Error + 'static, V: std::error::Error + 'static> std::error::Error
+    for DecodingError<D, V>
 {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         let source = match self {
             DecodingError::Decode(e) => e as &dyn std::error::Error,
-            DecodingError::Contract(e) => e as &dyn std::error::Error,
+            DecodingError::Validate(e) => e as &dyn std::error::Error,
         };
 
         Some(source)
     }
 }
 
-impl<T, C: Contract<Value = T>> TypedValue<T, C> {
-    pub fn new(value: T) -> Result<Self, <C as Contract>::Error> {
-        C::invariant(&value)?;
+impl<T, V: Validate<Value = T>> TypedValue<T, V> {
+    pub fn new(value: T) -> Result<Self, <V as Validate>::Error> {
+        V::validate(&value)?;
 
         Ok(TypedValue {
             inner: value,
@@ -125,25 +125,25 @@ impl<T, C: Contract<Value = T>> TypedValue<T, C> {
     }
 
     pub fn encode<E: Encode<Value = T>>(&self) -> E::Target {
-        E::into(&self.inner)
+        E::encode(&self.inner)
     }
 
     pub fn decode<D: Decode<Value = T>>(
         value: &D::Target,
-    ) -> Result<Self, DecodingError<D::Error, C::Error>> {
-        let value = D::from(value).map_err(DecodingError::Decode)?;
-        Self::new(value).map_err(DecodingError::Contract)
+    ) -> Result<Self, DecodingError<D::Error, V::Error>> {
+        let value = D::decode(value).map_err(DecodingError::Decode)?;
+        Self::new(value).map_err(DecodingError::Validate)
     }
 }
 
 pub trait TypedValueExt: Sized {
-    fn typed<C: Contract<Value = Self>>(self) -> Result<TypedValue<Self, C>, C::Error>;
+    fn typed<V: Validate<Value = Self>>(self) -> Result<TypedValue<Self, V>, V::Error>;
 }
 
 impl<T> TypedValueExt for T {
     #[inline]
-    fn typed<C: Contract<Value = Self>>(self) -> Result<TypedValue<Self, C>, C::Error> {
-        TypedValue::<Self, C>::new(self)
+    fn typed<V: Validate<Value = Self>>(self) -> Result<TypedValue<Self, V>, V::Error> {
+        TypedValue::<Self, V>::new(self)
     }
 }
 
@@ -152,7 +152,7 @@ pub mod primitive {
 
     macro_rules! export_types {
         ( $($x:ty => $y:ident),* ) => {
-            $( pub type $y<C> = TypedValue<$x, C>; )*
+            $( pub type $y<V> = TypedValue<$x, V>; )*
         };
     }
 
@@ -183,11 +183,11 @@ mod property_based_tests {
 
     struct Stub<T>(T);
 
-    impl<T> Contract for Stub<T> {
+    impl<T> Validate for Stub<T> {
         type Value = T;
         type Error = ();
 
-        fn invariant(_: &Self::Value) -> Result<(), Self::Error> {
+        fn validate(_: &Self::Value) -> Result<(), Self::Error> {
             Ok(())
         }
     }
@@ -196,7 +196,7 @@ mod property_based_tests {
         type Value = T;
         type Target = T;
 
-        fn into(value: &Self::Value) -> Self::Target {
+        fn encode(value: &Self::Value) -> Self::Target {
             value.clone()
         }
     }
@@ -206,7 +206,7 @@ mod property_based_tests {
         type Target = T;
         type Error = ();
 
-        fn from(value: &Self::Target) -> Result<Self::Value, Self::Error> {
+        fn decode(value: &Self::Target) -> Result<Self::Value, Self::Error> {
             Ok(value.clone())
         }
     }

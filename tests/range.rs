@@ -2,13 +2,13 @@ extern crate strongly_typed;
 
 use strongly_typed::{primitive::TypedU8, *};
 
-enum RangeContract<const MIN: u8, const MAX: u8> {}
+enum RangeValidation<const MIN: u8, const MAX: u8> {}
 
-impl<const MIN: u8, const MAX: u8> Contract for RangeContract<MIN, MAX> {
+impl<const MIN: u8, const MAX: u8> Validate for RangeValidation<MIN, MAX> {
     type Value = u8;
     type Error = ();
 
-    fn invariant(value: &Self::Value) -> Result<(), Self::Error> {
+    fn validate(value: &Self::Value) -> Result<(), Self::Error> {
         if (MIN..=MAX).contains(value) {
             Ok(())
         } else {
@@ -17,9 +17,9 @@ impl<const MIN: u8, const MAX: u8> Contract for RangeContract<MIN, MAX> {
     }
 }
 
-type ElementarySchoolGradeContract = RangeContract<1, 6>;
+type ElementarySchoolGradeValidation = RangeValidation<1, 6>;
 
-type ElementarySchoolGrade = TypedU8<ElementarySchoolGradeContract>;
+type ElementarySchoolGrade = TypedU8<ElementarySchoolGradeValidation>;
 
 #[test]
 fn ok_when_initialized_with_elementary_school_grade() {
@@ -34,14 +34,14 @@ fn err_when_initialized_with_invalid_grade() {
     assert!(ElementarySchoolGrade::new(7).is_err());
 }
 
-struct OddContract<T>(T);
+struct OddValidation<T>(T);
 
-impl<T: Contract<Value = u8, Error = ()>> Contract for OddContract<T> {
+impl<T: Validate<Value = u8, Error = ()>> Validate for OddValidation<T> {
     type Value = u8;
     type Error = ();
 
-    fn invariant(value: &Self::Value) -> Result<(), Self::Error> {
-        T::invariant(value)?;
+    fn validate(value: &Self::Value) -> Result<(), Self::Error> {
+        T::validate(value)?;
 
         match value % 2 {
             1 => Ok(()),
@@ -50,7 +50,7 @@ impl<T: Contract<Value = u8, Error = ()>> Contract for OddContract<T> {
     }
 }
 
-type ElementarySchoolOddGrade = TypedU8<OddContract<ElementarySchoolGradeContract>>;
+type ElementarySchoolOddGrade = TypedU8<OddValidation<ElementarySchoolGradeValidation>>;
 
 #[test]
 fn ok_when_initialized_with_odd_grade() {
