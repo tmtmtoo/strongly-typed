@@ -1,2 +1,3 @@
-# _strongly-typed_
+# _typed-value_
+
 A type-safe value utility.

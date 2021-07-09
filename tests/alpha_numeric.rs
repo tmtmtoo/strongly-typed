@@ -1,6 +1,6 @@
-extern crate strongly_typed;
+extern crate typed_value;
 
-use strongly_typed::{primitive::TypedString, *};
+use typed_value::{primitive::TypedString, *};
 
 const ALPHA_NUMERIC_REGEX: once_cell::sync::Lazy<regex::Regex> =
     once_cell::sync::Lazy::new(|| regex::Regex::new("^[A-Za-z0-9]+$").expect("invalid regex"));

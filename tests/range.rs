@@ -1,6 +1,6 @@
-extern crate strongly_typed;
+extern crate typed_value;
 
-use strongly_typed::{primitive::TypedU8, *};
+use typed_value::{primitive::TypedU8, *};
 
 enum RangeValidation<const MIN: u8, const MAX: u8> {}
 
