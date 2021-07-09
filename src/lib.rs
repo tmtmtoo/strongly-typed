@@ -69,51 +69,6 @@ pub trait Validate {
     fn validate(value: &Self::Value) -> Result<(), Self::Error>;
 }
 
-pub trait Encode {
-    type Value;
-    type Target;
-
-    fn encode(value: &Self::Value) -> Self::Target;
-}
-
-pub trait Decode {
-    type Value;
-    type Target;
-    type Error;
-
-    fn decode(value: &Self::Target) -> Result<Self::Value, Self::Error>;
-}
-
-#[derive(Debug)]
-pub enum DecodingError<D, V> {
-    Decode(D),
-    Validate(V),
-}
-
-impl<D: std::fmt::Display, V: std::fmt::Display> std::fmt::Display for DecodingError<D, V> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let (kind, error) = match self {
-            DecodingError::Decode(e) => ("Decode", e as &dyn std::fmt::Display),
-            DecodingError::Validate(e) => ("Validate", e as &dyn std::fmt::Display),
-        };
-
-        write!(f, "Decoding failed on {} phase because: {}", kind, error)
-    }
-}
-
-impl<D: std::error::Error + 'static, V: std::error::Error + 'static> std::error::Error
-    for DecodingError<D, V>
-{
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        let source = match self {
-            DecodingError::Decode(e) => e as &dyn std::error::Error,
-            DecodingError::Validate(e) => e as &dyn std::error::Error,
-        };
-
-        Some(source)
-    }
-}
-
 impl<T, V: Validate<Value = T>> TypedValue<T, V> {
     pub fn new(value: T) -> Result<Self, <V as Validate>::Error> {
         V::validate(&value)?;
@@ -122,17 +77,6 @@ impl<T, V: Validate<Value = T>> TypedValue<T, V> {
             inner: value,
             _phantom: std::marker::PhantomData,
         })
-    }
-
-    pub fn encode<E: Encode<Value = T>>(&self) -> E::Target {
-        E::encode(&self.inner)
-    }
-
-    pub fn decode<D: Decode<Value = T>>(
-        value: &D::Target,
-    ) -> Result<Self, DecodingError<D::Error, V::Error>> {
-        let value = D::decode(value).map_err(DecodingError::Decode)?;
-        Self::new(value).map_err(DecodingError::Validate)
     }
 }
 
@@ -147,34 +91,30 @@ impl<T> TypedValueExt for T {
     }
 }
 
-pub mod primitive {
-    use super::*;
-
-    macro_rules! export_types {
-        ( $($x:ty => $y:ident),* ) => {
-            $( pub type $y<V> = TypedValue<$x, V>; )*
-        };
-    }
-
-    export_types!(
-        u8      => TypedU8,
-        u16     => TypedU16,
-        u32     => TypedU32,
-        u64     => TypedU64,
-        u128    => TypedU128,
-        usize   => TypedUSize,
-        i8      => TypedI8,
-        i16     => TypedI16,
-        i32     => TypedI32,
-        i64     => TypedI64,
-        i128    => TypedI128,
-        usize   => TypedISize,
-        f32     => TypedF32,
-        f64     => TypedF64,
-        char    => TypedChar,
-        String  => TypedString
-    );
+macro_rules! export_types {
+    ( $($x:ty => $y:ident),* ) => {
+        $( pub type $y<V> = TypedValue<$x, V>; )*
+    };
 }
+
+export_types!(
+    u8      => TypedU8,
+    u16     => TypedU16,
+    u32     => TypedU32,
+    u64     => TypedU64,
+    u128    => TypedU128,
+    usize   => TypedUSize,
+    i8      => TypedI8,
+    i16     => TypedI16,
+    i32     => TypedI32,
+    i64     => TypedI64,
+    i128    => TypedI128,
+    usize   => TypedISize,
+    f32     => TypedF32,
+    f64     => TypedF64,
+    char    => TypedChar,
+    String  => TypedString
+);
 
 #[cfg(test)]
 mod property_based_tests {
@@ -192,45 +132,8 @@ mod property_based_tests {
         }
     }
 
-    impl<T: Clone> Encode for Stub<T> {
-        type Value = T;
-        type Target = T;
-
-        fn encode(value: &Self::Value) -> Self::Target {
-            value.clone()
-        }
-    }
-
-    impl<T: Clone> Decode for Stub<T> {
-        type Value = T;
-        type Target = T;
-        type Error = ();
-
-        fn decode(value: &Self::Target) -> Result<Self::Value, Self::Error> {
-            Ok(value.clone())
-        }
-    }
-
     #[quickcheck]
     fn equivalent_when_wrapped_and_then_unwrapped(value: u8) {
         assert_eq!(*TypedValue::<_, Stub<_>>::new(value).unwrap(), value)
-    }
-
-    #[quickcheck]
-    fn equivalent_when_encode_to_the_same_value(value: u8) {
-        assert_eq!(
-            TypedValue::<_, Stub<_>>::new(value)
-                .unwrap()
-                .encode::<Stub<_>>(),
-            value
-        )
-    }
-
-    #[quickcheck]
-    fn equivalent_when_decode_from_the_same_value(value: u8) {
-        assert_eq!(
-            *TypedValue::<_, Stub<_>>::decode::<Stub<_>>(&value).unwrap(),
-            value
-        )
     }
 }
