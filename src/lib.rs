@@ -34,12 +34,6 @@ impl<T: Clone, V> Clone for TypedValue<T, V> {
 
 impl<T: Copy, V> Copy for TypedValue<T, V> {}
 
-impl<T: std::hash::Hash, V> std::hash::Hash for TypedValue<T, V> {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.inner.hash(state)
-    }
-}
-
 impl<T: std::fmt::Debug, V> std::fmt::Debug for TypedValue<T, V> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TypedValue")
