@@ -1,3 +1,3 @@
 # _typed-value_
 
-A type-safe value utility.
+A type-safe, validatable value object.
