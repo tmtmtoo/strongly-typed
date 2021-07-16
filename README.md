@@ -1,3 +1,3 @@
 # _typed-value_
 
-A type-safe, validatable value object.
+A type-safe, contracted value object.

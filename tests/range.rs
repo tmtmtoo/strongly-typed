@@ -4,11 +4,11 @@ use typed_value::*;
 
 enum RangeValidation<const MIN: u8, const MAX: u8> {}
 
-impl<const MIN: u8, const MAX: u8> Validate for RangeValidation<MIN, MAX> {
+impl<const MIN: u8, const MAX: u8> Contract for RangeValidation<MIN, MAX> {
     type Value = u8;
     type Error = ();
 
-    fn validate(value: &Self::Value) -> Result<(), Self::Error> {
+    fn invariant(value: &Self::Value) -> Result<(), Self::Error> {
         if (MIN..=MAX).contains(value) {
             Ok(())
         } else {
@@ -36,12 +36,12 @@ fn err_when_initialized_with_invalid_grade() {
 
 struct OddValidation<T>(T);
 
-impl<T: Validate<Value = u8, Error = ()>> Validate for OddValidation<T> {
+impl<T: Contract<Value = u8, Error = ()>> Contract for OddValidation<T> {
     type Value = u8;
     type Error = ();
 
-    fn validate(value: &Self::Value) -> Result<(), Self::Error> {
-        T::validate(value)?;
+    fn invariant(value: &Self::Value) -> Result<(), Self::Error> {
+        T::invariant(value)?;
 
         match value % 2 {
             1 => Ok(()),

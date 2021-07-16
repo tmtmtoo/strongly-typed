@@ -5,13 +5,13 @@ use typed_value::*;
 const ALPHA_NUMERIC_REGEX: once_cell::sync::Lazy<regex::Regex> =
     once_cell::sync::Lazy::new(|| regex::Regex::new("^[A-Za-z0-9]+$").expect("invalid regex"));
 
-enum AlphaNumericValidation {}
+enum AlphaNumericContract {}
 
-impl Validate for AlphaNumericValidation {
+impl Contract for AlphaNumericContract {
     type Value = String;
     type Error = ();
 
-    fn validate(value: &Self::Value) -> Result<(), Self::Error> {
+    fn invariant(value: &Self::Value) -> Result<(), Self::Error> {
         if ALPHA_NUMERIC_REGEX.is_match(value) {
             Ok(())
         } else {
@@ -20,16 +20,16 @@ impl Validate for AlphaNumericValidation {
     }
 }
 
-struct FixedLengthValidation<T, const N: usize>(T);
+struct FixedLengthContract<T, const N: usize>(T);
 
-impl<T: Validate<Value = String, Error = ()>, const N: usize> Validate
-    for FixedLengthValidation<T, N>
+impl<T: Contract<Value = String, Error = ()>, const N: usize> Contract
+    for FixedLengthContract<T, N>
 {
     type Value = String;
     type Error = ();
 
-    fn validate(value: &Self::Value) -> Result<(), Self::Error> {
-        T::validate(value)?;
+    fn invariant(value: &Self::Value) -> Result<(), Self::Error> {
+        T::invariant(value)?;
 
         if value.chars().count() == N {
             Ok(())
@@ -39,10 +39,10 @@ impl<T: Validate<Value = String, Error = ()>, const N: usize> Validate
     }
 }
 
-type DynamicLengthAlphaNumeric = TypedValue<AlphaNumericValidation>;
+type DynamicLengthAlphaNumeric = TypedValue<AlphaNumericContract>;
 
 type FixedLengthAlphaNumeric<const N: usize> =
-    TypedValue<FixedLengthValidation<AlphaNumericValidation, N>>;
+    TypedValue<FixedLengthContract<AlphaNumericContract, N>>;
 
 #[test]
 fn ok_when_initialized_with_alpha_numeric_string() {
