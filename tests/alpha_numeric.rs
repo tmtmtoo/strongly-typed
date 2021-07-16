@@ -39,19 +39,19 @@ impl<T: Validate<Value = String, Error = ()>, const N: usize> Validate
     }
 }
 
-type DynamicLengthAlphaNumericString = TypedString<AlphaNumericValidation>;
+type DynamicLengthAlphaNumeric = TypedValue<AlphaNumericValidation>;
 
-type FixedLengthAlphaNumericString<const N: usize> =
-    TypedString<FixedLengthValidation<AlphaNumericValidation, N>>;
+type FixedLengthAlphaNumeric<const N: usize> =
+    TypedValue<FixedLengthValidation<AlphaNumericValidation, N>>;
 
 #[test]
 fn ok_when_initialized_with_alpha_numeric_string() {
-    assert!(DynamicLengthAlphaNumericString::new("0123456789ABCDEF".into()).is_ok());
-    assert!(FixedLengthAlphaNumericString::<16>::new("0123456789ABCDEF".into()).is_ok());
+    assert!(DynamicLengthAlphaNumeric::new("0123456789ABCDEF".into()).is_ok());
+    assert!(FixedLengthAlphaNumeric::<16>::new("0123456789ABCDEF".into()).is_ok());
 }
 
 #[test]
 fn err_when_initialized_with_alpha_numeric_string() {
-    assert!(DynamicLengthAlphaNumericString::new("☺️".into()).is_err());
-    assert!(FixedLengthAlphaNumericString::<1>::new("☺".into()).is_err());
+    assert!(DynamicLengthAlphaNumeric::new("☺️".into()).is_err());
+    assert!(FixedLengthAlphaNumeric::<1>::new("☺".into()).is_err());
 }

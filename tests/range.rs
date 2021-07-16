@@ -19,7 +19,7 @@ impl<const MIN: u8, const MAX: u8> Validate for RangeValidation<MIN, MAX> {
 
 type ElementarySchoolGradeValidation = RangeValidation<1, 6>;
 
-type ElementarySchoolGrade = TypedU8<ElementarySchoolGradeValidation>;
+type ElementarySchoolGrade = TypedValue<ElementarySchoolGradeValidation>;
 
 #[test]
 fn ok_when_initialized_with_elementary_school_grade() {
@@ -50,7 +50,7 @@ impl<T: Validate<Value = u8, Error = ()>> Validate for OddValidation<T> {
     }
 }
 
-type ElementarySchoolOddGrade = TypedU8<OddValidation<ElementarySchoolGradeValidation>>;
+type ElementarySchoolOddGrade = TypedValue<OddValidation<ElementarySchoolGradeValidation>>;
 
 #[test]
 fn ok_when_initialized_with_odd_grade() {
