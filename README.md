@@ -1,3 +1,7 @@
 # _typed-value_
 
-A type-safe, contracted value object.
+A type-safe, validatable value object.
+
+## examples
+
+See [/tests]("./tests/).
