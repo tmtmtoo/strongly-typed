@@ -1,28 +1,43 @@
-pub struct TypedValue<C: Contract> {
-    inner: C::Value,
+pub trait Property {
+    type Value;
+    type Error;
+
+    fn validate(value: &Self::Value) -> Result<(), Self::Error>;
 }
 
-impl<C: Contract<Value = V>, V: PartialEq> PartialEq for TypedValue<C> {
+pub struct TypedValue<P: Property> {
+    inner: P::Value,
+}
+
+impl<P: Property> TypedValue<P> {
+    pub fn new(value: P::Value) -> Result<Self, P::Error> {
+        P::validate(&value)?;
+
+        Ok(TypedValue { inner: value })
+    }
+}
+
+impl<P: Property<Value = V>, V: PartialEq> PartialEq for TypedValue<P> {
     fn eq(&self, other: &Self) -> bool {
         self.inner.eq(&other.inner)
     }
 }
 
-impl<C: Contract<Value = V>, V: Eq> Eq for TypedValue<C> {}
+impl<P: Property<Value = V>, V: Eq> Eq for TypedValue<P> {}
 
-impl<C: Contract<Value = V>, V: PartialOrd> PartialOrd for TypedValue<C> {
+impl<P: Property<Value = V>, V: PartialOrd> PartialOrd for TypedValue<P> {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.inner.partial_cmp(&other.inner)
     }
 }
 
-impl<C: Contract<Value = V>, V: Ord> Ord for TypedValue<C> {
+impl<P: Property<Value = V>, V: Ord> Ord for TypedValue<P> {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.inner.cmp(&other.inner)
     }
 }
 
-impl<C: Contract<Value = V>, V: Clone> Clone for TypedValue<C> {
+impl<P: Property<Value = V>, V: Clone> Clone for TypedValue<P> {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
@@ -30,9 +45,9 @@ impl<C: Contract<Value = V>, V: Clone> Clone for TypedValue<C> {
     }
 }
 
-impl<C: Contract<Value = V>, V: Copy> Copy for TypedValue<C> {}
+impl<P: Property<Value = V>, V: Copy> Copy for TypedValue<P> {}
 
-impl<C: Contract<Value = V>, V: std::fmt::Debug> std::fmt::Debug for TypedValue<C> {
+impl<P: Property<Value = V>, V: std::fmt::Debug> std::fmt::Debug for TypedValue<P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("TypedValue")
             .field("inner", &self.inner)
@@ -40,41 +55,26 @@ impl<C: Contract<Value = V>, V: std::fmt::Debug> std::fmt::Debug for TypedValue<
     }
 }
 
-impl<C: Contract<Value = V>, V: std::fmt::Display> std::fmt::Display for TypedValue<C> {
+impl<P: Property<Value = V>, V: std::fmt::Display> std::fmt::Display for TypedValue<P> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.inner)
     }
 }
 
-impl<C: Contract> std::ops::Deref for TypedValue<C> {
-    type Target = C::Value;
+impl<P: Property> std::ops::Deref for TypedValue<P> {
+    type Target = P::Value;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
-pub trait Contract {
-    type Value;
-    type Error;
-
-    fn invariant(value: &Self::Value) -> Result<(), Self::Error>;
-}
-
-impl<C: Contract> TypedValue<C> {
-    pub fn new(value: C::Value) -> Result<Self, C::Error> {
-        C::invariant(&value)?;
-
-        Ok(TypedValue { inner: value })
-    }
-}
-
 pub trait TypedValueExt: Sized {
-    fn typed<C: Contract<Value = Self>>(self) -> Result<TypedValue<C>, C::Error>;
+    fn typed<P: Property<Value = Self>>(self) -> Result<TypedValue<P>, P::Error>;
 }
 
 impl<T> TypedValueExt for T {
-    fn typed<C: Contract<Value = Self>>(self) -> Result<TypedValue<C>, C::Error> {
+    fn typed<P: Property<Value = Self>>(self) -> Result<TypedValue<P>, P::Error> {
         TypedValue::new(self)
     }
 }
@@ -86,11 +86,11 @@ mod property_based_tests {
 
     struct Stub<T>(T);
 
-    impl<T> Contract for Stub<T> {
+    impl<T> Property for Stub<T> {
         type Value = T;
         type Error = ();
 
-        fn invariant(_: &Self::Value) -> Result<(), Self::Error> {
+        fn validate(_: &Self::Value) -> Result<(), Self::Error> {
             Ok(())
         }
     }

@@ -2,13 +2,13 @@ extern crate typed_value;
 
 use typed_value::*;
 
-enum RangeValidation<const MIN: u8, const MAX: u8> {}
+enum RangeProperty<const MIN: u8, const MAX: u8> {}
 
-impl<const MIN: u8, const MAX: u8> Contract for RangeValidation<MIN, MAX> {
+impl<const MIN: u8, const MAX: u8> Property for RangeProperty<MIN, MAX> {
     type Value = u8;
     type Error = ();
 
-    fn invariant(value: &Self::Value) -> Result<(), Self::Error> {
+    fn validate(value: &Self::Value) -> Result<(), Self::Error> {
         if (MIN..=MAX).contains(value) {
             Ok(())
         } else {
@@ -17,9 +17,9 @@ impl<const MIN: u8, const MAX: u8> Contract for RangeValidation<MIN, MAX> {
     }
 }
 
-type ElementarySchoolGradeValidation = RangeValidation<1, 6>;
+type ElementarySchoolGradeProperty = RangeProperty<1, 6>;
 
-type ElementarySchoolGrade = TypedValue<ElementarySchoolGradeValidation>;
+type ElementarySchoolGrade = TypedValue<ElementarySchoolGradeProperty>;
 
 #[test]
 fn ok_when_initialized_with_elementary_school_grade() {
@@ -34,14 +34,14 @@ fn err_when_initialized_with_invalid_grade() {
     assert!(ElementarySchoolGrade::new(7).is_err());
 }
 
-struct OddValidation<T>(T);
+struct OddProperty<T>(T);
 
-impl<T: Contract<Value = u8, Error = ()>> Contract for OddValidation<T> {
+impl<T: Property<Value = u8, Error = ()>> Property for OddProperty<T> {
     type Value = u8;
     type Error = ();
 
-    fn invariant(value: &Self::Value) -> Result<(), Self::Error> {
-        T::invariant(value)?;
+    fn validate(value: &Self::Value) -> Result<(), Self::Error> {
+        T::validate(value)?;
 
         match value % 2 {
             1 => Ok(()),
@@ -50,7 +50,7 @@ impl<T: Contract<Value = u8, Error = ()>> Contract for OddValidation<T> {
     }
 }
 
-type ElementarySchoolOddGrade = TypedValue<OddValidation<ElementarySchoolGradeValidation>>;
+type ElementarySchoolOddGrade = TypedValue<OddProperty<ElementarySchoolGradeProperty>>;
 
 #[test]
 fn ok_when_initialized_with_odd_grade() {

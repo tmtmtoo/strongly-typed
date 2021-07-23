@@ -5,13 +5,13 @@ use typed_value::*;
 const ALPHA_NUMERIC_REGEX: once_cell::sync::Lazy<regex::Regex> =
     once_cell::sync::Lazy::new(|| regex::Regex::new("^[A-Za-z0-9]+$").expect("invalid regex"));
 
-enum AlphaNumericContract {}
+enum AlphaNumericProperty {}
 
-impl Contract for AlphaNumericContract {
+impl Property for AlphaNumericProperty {
     type Value = String;
     type Error = ();
 
-    fn invariant(value: &Self::Value) -> Result<(), Self::Error> {
+    fn validate(value: &Self::Value) -> Result<(), Self::Error> {
         if ALPHA_NUMERIC_REGEX.is_match(value) {
             Ok(())
         } else {
@@ -20,16 +20,16 @@ impl Contract for AlphaNumericContract {
     }
 }
 
-struct FixedLengthContract<T, const N: usize>(T);
+struct FixedLengthProperty<T, const N: usize>(T);
 
-impl<T: Contract<Value = String, Error = ()>, const N: usize> Contract
-    for FixedLengthContract<T, N>
+impl<T: Property<Value = String, Error = ()>, const N: usize> Property
+    for FixedLengthProperty<T, N>
 {
     type Value = String;
     type Error = ();
 
-    fn invariant(value: &Self::Value) -> Result<(), Self::Error> {
-        T::invariant(value)?;
+    fn validate(value: &Self::Value) -> Result<(), Self::Error> {
+        T::validate(value)?;
 
         if value.chars().count() == N {
             Ok(())
@@ -39,10 +39,10 @@ impl<T: Contract<Value = String, Error = ()>, const N: usize> Contract
     }
 }
 
-type DynamicLengthAlphaNumeric = TypedValue<AlphaNumericContract>;
+type DynamicLengthAlphaNumeric = TypedValue<AlphaNumericProperty>;
 
 type FixedLengthAlphaNumeric<const N: usize> =
-    TypedValue<FixedLengthContract<AlphaNumericContract, N>>;
+    TypedValue<FixedLengthProperty<AlphaNumericProperty, N>>;
 
 #[test]
 fn ok_when_initialized_with_alpha_numeric_string() {
