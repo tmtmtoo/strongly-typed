@@ -3,6 +3,12 @@ name = "typed-value"
 version = "0.1.0"
 authors = ["tmtmtoo <tmtmt2209@gmail.com>"]
 edition = "2018"
+license = "MIT"
+description = "A type-safe, validatable value object."
+repository = "https://github.com/tmtmtoo/typed-value"
+homepage = "https://github.com/tmtmtoo/typed-value"
+readme = "README.md"
+keywords = ["value", "validation", "no_std"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
