@@ -1,21 +1,56 @@
 #![no_std]
+#![deny(missing_docs)]
+
+//! A type-safe, validatable value object.
 
 #[cfg(test)]
 #[macro_use]
 extern crate std;
 
+/// Trait that represents the property of the value.
 pub trait Property {
+    /// Value type.
     type Value;
+
+    /// Validation error type.
     type Error;
 
+    /// Method for validating value.
     fn validate(value: &Self::Value) -> Result<(), Self::Error>;
 }
 
+/// Value object with constraints by Property trait.
 pub struct TypedValue<P: Property> {
     inner: P::Value,
 }
 
 impl<P: Property> TypedValue<P> {
+    /// Method to instantiate a TypedValue.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use typed_value::*;
+    ///
+    /// struct MaximumLengthProperty<T, const N:usize>(T);
+    ///
+    /// impl<T: AsRef<str>, const N:usize> Property for MaximumLengthProperty<T, N> {
+    ///     type Value = T;
+    ///     type Error = String;
+    ///
+    ///     fn validate(value: &Self::Value) -> Result<(), Self::Error> {
+    ///         if value.as_ref().chars().count() <= N {
+    ///             Ok(())
+    ///         } else {
+    ///             Err(format!("length of \"{}\" is over {}.", value.as_ref(), N))
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// type MaximumLengthString<const N:usize> = TypedValue<MaximumLengthProperty<String, N>>;
+    ///
+    /// assert!(MaximumLengthString::<5>::new("foobar".to_owned()).is_err());
+    /// ```
     pub fn new(value: P::Value) -> Result<Self, P::Error> {
         P::validate(&value)?;
 
@@ -95,7 +130,33 @@ impl<P: Property> core::ops::Deref for TypedValue<P> {
     }
 }
 
+/// Trait that provides a wrapping method to TypedValue for any value.
 pub trait TypedValueExt: Sized {
+    /// # Examples
+    ///
+    /// ```
+    /// use typed_value::*;
+    ///
+    /// struct MaximumLengthProperty<T, const N:usize>(T);
+    ///
+    /// impl<T: AsRef<str>, const N:usize> Property for MaximumLengthProperty<T, N> {
+    ///     type Value = T;
+    ///     type Error = String;
+    ///
+    ///     fn validate(value: &Self::Value) -> Result<(), Self::Error> {
+    ///         if value.as_ref().chars().count() <= N {
+    ///             Ok(())
+    ///         } else {
+    ///             Err(format!("length of \"{}\" is over {}.", value.as_ref(), N))
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// type MaximumLengthString<const N:usize> = TypedValue<MaximumLengthProperty<String, N>>;
+    ///
+    /// let foobar = "foobar".to_owned();
+    /// let _: MaximumLengthString<6> = foobar.typed().unwrap();
+    /// ```
     fn typed<P: Property<Value = Self>>(self) -> Result<TypedValue<P>, P::Error>;
 }
 
